@@ -131,6 +131,10 @@ class ResBlock(nn.Module):
         h = self.attention(h)
 
         return h
+    
+
+class ResBlock1(nn.Module):
+    pass
 
 if __name__ == '__main__':
     # tast ResBlock

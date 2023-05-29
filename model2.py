@@ -11,6 +11,8 @@ class UNet(nn.Module):
 
         self.head = nn.Conv2d(3, 128, kernel_size=3, stride=1, padding=1)
 
+        self.resBlock1 = ResBlock(128, 128)
+
     def forward(self, x, t):
         x = self.head(x)
         return x
@@ -28,6 +30,6 @@ if __name__ == "__main__":
     for i, images in enumerate(dataloader):
         images = images.to(device)
         x = model(images, 0)
-        
+
         print(x.shape)
         break
