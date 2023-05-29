@@ -10,7 +10,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 
-
 for i, images in enumerate(dataloader):
     print(images.shape)
     break
