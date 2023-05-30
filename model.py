@@ -127,8 +127,8 @@ class UNet(nn.Module):
     
     def sample(self, x, t):
         z = torch.randn_like(x) if t > 1 else 0
-        
-        e_hat = self.forward(x, t.view(1, 1).repeat(x.shape[0], 1))
+
+        e_hat = self.forward(x, t)
         pre_scale = 1 / torch.sqrt(self.alphas[t])
         e_scale = (1 - self.alphas[t]) / torch.sqrt(1 - self.alphas_bar[t])
         post_sigma = torch.sqrt(self.betas[t]) * z

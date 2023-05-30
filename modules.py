@@ -4,24 +4,6 @@ import torch.nn.functional as F
 import math
 
 
-class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, dim):
-        super().__init__()
-
-        self.d_model = d_model
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    def forward(self, t):
-        self.emb = torch.arange(0, self.d_model, 2, device=self.device).float() / self.d_model * math.log(10000)
-        self.emb = torch.exp(-self.emb)
-
-        pos_enc = t.repeat(1, self.d_model // 2).to(self.device) * self.emb
-        pos_enc = torch.cat([torch.sin(pos_enc), torch.cos(pos_enc)], dim=-1)
-        pos_enc = pos_enc[:, :, None, None]
-
-        return pos_enc
-    
-
 class TimeEmbedding(nn.Module):
     def __init__(self, T, d_model, dim):
         super().__init__()
