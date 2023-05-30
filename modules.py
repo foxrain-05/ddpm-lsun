@@ -5,7 +5,7 @@ import math
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model):
+    def __init__(self, d_model, dim):
         super().__init__()
 
         self.d_model = d_model
@@ -25,9 +25,12 @@ class PositionalEncoding(nn.Module):
 class TimeEmbedding(nn.Module):
     def __init__(self, T, d_model, dim):
         super().__init__()
-        emb = torch.arange(0, d_model, 2).float() / d_model * math.log(10000)
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+        emb = torch.arange(0, d_model, 2, device=device).float() / d_model * math.log(10000)
         emb = torch.exp(-emb)
-        pos = torch.arange(T).float()
+        pos = torch.arange(T, device=device).float()
         emb = pos[:, None] * emb[None, :]
         emb = torch.stack([torch.sin(emb), torch.cos(emb)], dim=-1)
         emb = emb.view(T, d_model)
