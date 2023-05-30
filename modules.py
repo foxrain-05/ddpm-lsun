@@ -78,7 +78,7 @@ class AttentionBlock(nn.Module):
         q = self.q(h)
         k = self.k(h)
         v = self.v(h)
-        
+    
         q = q.permute(0, 2, 3, 1).view(B, H*W, C)
         k = k.view(B, C, H * W)
 
@@ -91,7 +91,6 @@ class AttentionBlock(nn.Module):
         h = self.out(h)
         
         return x + h
-        
 
 class ResBlock(nn.Module):
     def __init__(self, in_channels, out_channels, tdim, dropout=0.1, attention=False):
@@ -133,8 +132,6 @@ class ResBlock(nn.Module):
         return h
     
 
-class ResBlock1(nn.Module):
-    pass
 
 if __name__ == '__main__':
     # tast ResBlock
