@@ -10,8 +10,7 @@ class CatDataset(Dataset):
         self.data_path = glob(data_path + "/*.jpg")
 
         self.transform = transforms.Compose([
-            transforms.RandomRotation(20),
-            transforms.Resize((512, 512)),
+            transforms.Resize((256, 256)),
 
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
