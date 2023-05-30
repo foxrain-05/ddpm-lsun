@@ -119,8 +119,8 @@ class UNet(nn.Module):
 
         alpha_t_bar = torch.gather(self.alphas_bar, 0, ts)
         x_t = torch.sqrt(alpha_t_bar)[:, None, None, None] * x_0 + torch.sqrt(1 - alpha_t_bar)[:, None, None, None] * eposilon
-
-        e_hat = self.forward(x_t, ts[:, None].type(torch.float))
+        
+        e_hat = self.forward(x_t, ts)
         loss = F.mse_loss(e_hat.reshape(e_hat.shape[0], -1), eposilon.reshape(eposilon.shape[0], -1), reduction='none')
 
         return loss
@@ -140,19 +140,27 @@ class UNet(nn.Module):
 
 if __name__ == "__main__":
 
-    batch_size = 4
+    # batch_size = 4
 
-    dataset = CatDataset("data/cat")
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    # dataset = CatDataset("data/cat")
+    # dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = UNet().to(device)
+    # model = UNet().to(device)
     
-    for i, images in enumerate(dataloader):
-        images = images.to(device)
-        t = torch.randint(1000, (batch_size, )).to(device)
-        x = model(images, t)
+    # for i, images in enumerate(dataloader):
+    #     images = images.to(device)
+    #     t = torch.randint(1000, (batch_size, )).to(device)
+    #     x = model(images, t)
 
-        save_image(x, "test.png")
-        break
+    #     save_image(x, "test.png")
+    #     break
+
+    model = UNet().to(device)
+    x = torch.randn(1, 3, 256, 256).to(device)
+    t = torch.randint(1000, (1, )).to(device)
+
+    x = model.loss(x)
+    print(x.shape)
+    save_image(x, "test.png")
