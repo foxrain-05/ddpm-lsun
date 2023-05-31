@@ -12,10 +12,8 @@ model = UNet().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 
 
-for epoch in range(200):
-    model.train()
+for epoch in range(200):    
     for i, x in enumerate(dataloader):
-
         x = x.to(device)
         optimizer.zero_grad()
 
@@ -36,6 +34,9 @@ for epoch in range(200):
                     x = model.sample(x, t)
 
                 save_image(x, f"test/{epoch}_{i}.png")
+            model.train()
+            
+
     
     torch.save(model.state_dict(), f"checkpoints/{epoch}.pt")
     
