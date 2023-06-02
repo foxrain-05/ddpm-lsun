@@ -29,14 +29,33 @@ class UNet(nn.Module):
 
         self.middle = MiddleBlock(out_channels, time_channels=n_channels * 4)
 
+        
+        self.up = nn.ModuleList()   
+        for i in reversed(range(len(self.mults))):
+            in_channels = out_channels
+
+            for _ in range(2):
+                layer = UpBlock(in_channels=in_channels, out_channels=out_channels, time_channels=n_channels * 4, attention=self.is_attentions[i])
+                self.up.append(layer)
+
+            out_channels = in_channels // self.mults[i]
+            up.append(UpBlock(in_channels, out_channels, n_channels * 4, self.is_attentions[i]))
+            in_channels = out_channels
+
+            if i > 0:
+                self.up.append(UpSample(in_channels))
+
+            self.gn = nn.GroupNorm(32, n_channels)
+            self.act = nn.SiLU()
+            self.conv = nn.Conv2d(in_channels, 3, kernel_size=3, padding=1)
 
     def forward(self, x, t):
-        h = self.head(x)
-
-        print(t.shape)
         t = self.time_emb(t)
-        print(t.shape)
-        return h
+        x = self.head(x)
+
+        h = [x]
+        for layer in self.down:
+            h.append*
     
 
 if __name__ == "__main__":
