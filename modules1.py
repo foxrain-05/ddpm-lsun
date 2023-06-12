@@ -17,6 +17,7 @@ class TimeEmb(nn.Module):
         half_dim = self.n_channels // 8
         emb = math.log(10000) / (half_dim - 1)
         emb = torch.exp(-emb * torch.arange(half_dim, device=t.device).float())
+
         emb = t[:, None] * emb[None, :]
         emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=-1)
 
@@ -30,7 +31,7 @@ class TimeEmb(nn.Module):
 class AttentionBlock(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
-        self.gn = nn.GroupNorm(32, in_channels)
+        self.gn = nn.GroupNorm(8, in_channels)
         self.q = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, padding=0)
         self.k = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, padding=0)
         self.v = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, padding=0)
@@ -59,46 +60,43 @@ class AttentionBlock(nn.Module):
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, temb, n_groups=32, dropout=0.1):
+    def __init__(self, in_channels, out_channels, time_channels, n_groups=32, dropout=0.1):
         super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.temb = temb
-        self.n_groups = n_groups
-        
-        self.gn1 = nn.GroupNorm(self.n_groups, self.in_channels)
+
+        self.norm1 = nn.GroupNorm(n_groups, in_channels)
         self.act1 = nn.SiLU()
-        self.conv1 = nn.Conv2d(self.in_channels, self.out_channels, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
 
-        self.gn2 = nn.GroupNorm(self.n_groups, self.out_channels)
+        self.norm2 = nn.GroupNorm(n_groups, out_channels)
         self.act2 = nn.SiLU()
-        self.conv2 = nn.Conv2d(self.out_channels, self.out_channels, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1) 
 
-        if self.in_channels != self.out_channels:
-            self.shortcut = nn.Conv2d(self.in_channels, self.out_channels, kernel_size=1)
+        if in_channels != out_channels:
+            self.shortcut = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         else:
             self.shortcut = nn.Identity()
-
-        self.temb = nn.Linear(self.temb, self.out_channels)
+        
+        self.temb = nn.Linear(time_channels, out_channels)
         self.temb_act = nn.SiLU()
 
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, t):
-        h = self.gn1(x)
+        h = self.norm1(x)
         h = self.act1(h)
         h = self.conv1(h)
 
         h += self.temb(self.temb_act(t))[:, :, None, None]
 
-        h = self.gn2(h)
+        h = self.norm2(h)
         h = self.act2(h)
+        h = self.dropout(h)
         h = self.conv2(h)
 
         return h + self.shortcut(x)
 
 
-class DownBlock(nn.Module):
+class Block(nn.Module):
     def __init__(self, in_channels, out_channels, time_channels, attention=False):
         super().__init__()
         self.res = ResidualBlock(in_channels, out_channels, time_channels)
@@ -111,22 +109,6 @@ class DownBlock(nn.Module):
         h = self.res(x, t)
         h = self.attention(h)
         return h
-    
-
-class UpBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, time_channels, attention=False):
-        super().__init__()
-        self.res = ResidualBlock(in_channels + out_channels, out_channels, time_channels)
-        if attention:
-            self.attention = AttentionBlock(out_channels)
-        else:
-            self.attention = nn.Identity()
-
-    def forward(self, x, t):
-        x = self.res(x, t)
-        x = self.attention(x)
-        return x
-    
 
 class MiddleBlock(nn.Module):
     def __init__(self, n_channels, time_channels):
@@ -145,7 +127,7 @@ class MiddleBlock(nn.Module):
 class UpSample(nn.Module):
     def __init__(self, n_channels):
         super().__init__()
-        self.conv = nn.Conv2d(n_channels * 2, n_channels * 2, kernel_size=3, padding=1)
+        self.conv = nn.Conv2d(n_channels, n_channels, kernel_size=3, stride=1, padding=1)
 
     def forward(self, x, t=None):
         x = F.interpolate(x, scale_factor=2, mode="nearest")
